@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+# never commit client exports
+data/
+uploads/
+
+# secrets: never commit
+.streamlit/secrets.toml
+*.pem
+*.key
+.env
