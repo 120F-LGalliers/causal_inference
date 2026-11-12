@@ -1,0 +1,52 @@
+# Copy this file to recipes/<client_name>.yaml and fill it in. See recipes/README.md.
+
+client: Client name
+owner: ""                      # who maintains this file
+last_reviewed: ""              # YYYY-MM-DD
+
+data_source:
+  tool: ""                     # e.g. Adobe Analytics, Monetate, Webtrends Optimize, Quantum Metric, GA4
+  report_suite: ""             # or property / project ID
+  notes: ""                    # which view to use and why; how weeks are labelled in exports
+data_starts: null              # YYYY-MM-DD: first date with usable data
+
+release_process: >
+  Where tests and releases are tracked, how to find the release date, and whether winners
+  sometimes run at 100% in the testing tool before release.
+
+known_issues:                  # tracking breaks, definition changes, recurring peaks
+  - start: null                # YYYY-MM-DD or null for recurring/undated
+    end: null
+    affects: ""
+    advice: ""
+    applies_to: []             # recipe ids this affects; leave empty if it affects all recipes
+
+reference: {}                  # variable meanings, page names, anything people keep looking up
+
+recipes:
+  - id: client_area_metric     # unique, lowercase
+    name: ""
+    use_when: ""
+    example_tests: []
+    verified: false
+    outcome:
+      column: ""               # suggested CSV column name
+      definition: ""
+      how_to_export: ""
+    denominator:               # or null
+      column: ""
+      definition: ""
+      how_to_export: ""
+    controls:
+      - column: ""
+        definition: ""
+        why: ""                # why the change can't affect it and why it moves with the outcome
+        cautions: ""
+        how_to_export: ""
+    placebo_note: ""           # if no placebo is suitable, say why (leave placebo as [])
+    placebo:                   # metrics the change can't affect AND that would react to the same-week events you're worried about
+      - column: ""
+        definition: ""
+        why: ""
+    typical_detectable_effect: ""
+    notes: ""

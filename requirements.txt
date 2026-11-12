@@ -1,0 +1,11 @@
+# Pinned for reproducible results. Upgrade deliberately and re-run `pytest` and validation/run_validation.py.
+streamlit==1.67.0
+pandas==3.0.5
+numpy==2.5.3
+scipy==1.18.1
+statsmodels==0.15.0   # only used by the v1 comparison engine
+altair==6.3.0
+pyyaml==6.0.3
+vl-convert-python==1.9.0.post1   # renders report charts as static SVG
+PyJWT[crypto]==2.15.0          # Monetate API authentication
+requests==2.34.2

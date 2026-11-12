@@ -1,0 +1,380 @@
+# Domino's: data recipes for the post-release impact checker
+#
+# Drafted Nov 2026 from the Domino's experiment analysis decks (EXP-201 to EXP-296) and Liam's notes.
+# Everything is verified: false until the account team (Mehul, Joe) has checked it.
+# Edit via pull request. See recipes/README.md for the format.
+
+client: Domino's
+owner: ""                      # account team member who maintains this file
+last_reviewed: ""              # YYYY-MM-DD
+
+data_source:
+  tool: GA4 (web), BigQuery (GA4 export and app data)
+  report_suite: "GA4 UK web property; Ireland web property for controls; app data from BigQuery"
+  export_query: recipes/sql/dominos_weekly.sql
+  monetate_client: dominos          # key for Monetate API credentials in the app's secrets
+  notes: >
+    Use recipes/sql/dominos_weekly.sql: it produces every column below for UK web, Ireland web (ie_) and
+    the UK app (app_) in one weekly CSV. 120Feet only tests on UK web. Ireland web has the same layout and
+    page structure as UK web (deals page, Deal Builder, basket), which is what makes it a good control. Export weekly figures from GA4 (or the BigQuery GA4 export for
+    funnel and item-level metrics). Ireland web and the app were never in a test, so they are the main
+    sources of control series. UK builds don't go out to Ireland, so Ireland stays unexposed after the
+    native release too. Use rates and per-order metrics, not revenue totals, when comparing UK with
+    Ireland (different currency, prices and campaigns). GA4 data is reliable. Test readouts quote
+    Monetate figures, which count sessions and items differently from GA4, so compare RATES in the
+    export-vs-test check and expect a small gap.
+data_starts: 2025-01-06        # UK web sessions drop ~30% in Dec 2024 (see known issues); start session-based rates here
+
+release_process: >
+  Tests are tracked on the Monday board 'Experimentation | Web' (Test Plan tab on each card); readouts are
+  in the shared 'Experiment Analysis' folder. Winners are usually switched to 100% in Monetate straight after
+  the test and left there until Domino's builds them natively. Use the date the experience went to 100% in
+  Monetate as the change date, NOT the native release date. Monetate's APIs don't provide experience dates
+  or traffic-split history; use recipes/sql/dominos_experiment_timeline.sql, which reads Monetate's
+  experiment events in GA4 and shows the day only one variant remains. If there was a gap between the test ending
+  and the 100% switch, leave that gap out. The native release can cause a second, smaller break (a slightly
+  different build): note the native release date and
+  check the chart around it. UK builds don't go to Ireland.
+
+known_issues:
+  - start: null
+    end: null
+    affects: "National campaigns (C1, C2 ... C6 each year) with TV and ad spend, and national deal changes"
+    applies_to: []
+    advice: >
+      Campaign launches move traffic, deal mix and conversion sharply, and Ireland and the app don't always
+      run the same campaign at the same time. Check the campaign calendar; avoid a change date in a campaign
+      launch week, and treat a control that runs a different campaign with caution.
+  - start: null
+    end: null
+    affects: "App 'Two for Tuesday' offer"
+    applies_to: [dominos_deals_progression, dominos_sitewide_conversion]
+    advice: >
+      Weekly figures smooth the day-of-week pattern, but a change in how web deals compare with the app offer
+      can move customers between app and web (EXP-275v2 saw Tuesday peaks on web). Be careful using app
+      series as controls for deal changes.
+  - start: null
+    end: null
+    affects: "Christmas, festive weeks and big football tournaments"
+    applies_to: []
+    advice: >
+      Order volumes and behaviour change (EXP-246 saw upsell engagement drop over festive periods). If your
+      controls don't follow these weeks, leave them out of the 'before' period.
+  - start: 2024-05-31
+    end: 2024-05-31
+    affects: "App checkout outage (Friday 31st, noted in EXP-220v4; month assumed May 2024)"
+    applies_to: []
+    advice: "App users moved to web for the day. Leave that week out if it's in your data. Confirm the date."
+  - start: 2026-07-14
+    end: 2026-07-14
+    affects: >
+      Menu categories as separate pages (EXP-282) rolled out on UK web on 14 Jul 2026. The menu is now split
+      into category pages, which changes the UK menu journey and how 'sessions reaching the menu' is built.
+      Ireland didn't get it.
+    applies_to: [dominos_menu_progression, dominos_deal_builder_attach, dominos_sitewide_conversion]
+    advice: >
+      Count a menu session as any menu category page after this date. For changes released after it, a
+      'before' period that crosses it compares two different menus: start the history from 14 Jul 2026 if
+      you have enough weeks, or check the hidden-break warning. For checks of earlier releases, end the
+      'after' window before 14 Jul 2026.
+  - start: 2025-09-29
+    end: null
+    affects: "Chick'n'Dip launch (trial from Sep 2025, then nationwide) and other new product launches"
+    applies_to: [dominos_deal_builder_attach, dominos_menu_progression]
+    advice: "New products shift item mix and attach rates. Avoid attach-rate controls for items in the same category."
+
+  # ---- Found in the first export (12 Nov 2026). Causes not yet confirmed with Domino's.
+  - start: 2024-11-18
+    end: null
+    affects: "Ireland web has no rows in CX_Analysis.GA4_Sessions_intraday after the week of 11 Nov 2024"
+    applies_to: []
+    advice: >
+      The Ireland control can't be used from the sessions table after Nov 2024. Ireland data probably moved
+      to another table or GA4 property: find out where, and add it to the export. Until then use the app control.
+  - start: 2024-12-02
+    end: 2025-01-05
+    affects: >
+      UK web sessions fall ~30% over December 2024 while orders don't, so conversion rate jumps from ~14% to
+      ~20%+ (likely a consent, bot-filtering or session-tracking change). Deal share of orders also steps up
+      ~25% on web and app.
+    applies_to: []
+    advice: >
+      Start history from 6 Jan 2025 for anything divided by sessions or using deal share. Conversion keeps
+      settling until about Mar 2025: starting from 3 Mar 2025 roughly halved the smallest detectable effect
+      in the EXP-242v3 check.
+  - start: 2026-01-19
+    end: 2026-03-02
+    affects: >
+      UK web items per order drops ~20% (app doesn't) and web deal share drops; voucher_orders is zero for the
+      weeks of 26 Jan to 2 Mar 2026. Looks like an item/transaction tracking change on web.
+    applies_to: [dominos_deal_builder_attach, dominos_basket]
+    advice: "Don't use items per order, deal share or voucher series across this period without checking the cause."
+  - start: 2026-04-20
+    end: 2026-05-03
+    affects: "App items per order steps up ~20%."
+    applies_to: [dominos_basket]
+    advice: "Don't use app items per order as a control across this date."
+  - start: 2026-06-29
+    end: null
+    affects: >
+      UK web checkout completion falls from ~0.89-0.90 to ~0.80-0.84 in stages: from early July 2026 (around
+      EXP-283 going live and the 14 Jul menu change), then again from mid-August (EXP-289 at 100%). Menu-only
+      conversion roughly halves for 3 Aug to 7 Sep 2026, then recovers.
+    applies_to: [dominos_basket, dominos_checkout, dominos_deals_progression, dominos_deal_builder_attach]
+    advice: >
+      Several UK web changes overlap here (EXP-283, menu categories, EXP-289), so a check can't separate them.
+      Say so in any write-up for a change released in this period.
+reference:
+  pages: "Homepage, Store Selector, Menu, Deals, Deal Builder, RFM ('Room for more' interstitial), Basket, Checkout, Order Confirmation"
+  kpis:
+    conversion_rate: "Orders / Sessions"
+    menu_to_basket: "Sessions reaching basket / Sessions reaching menu"
+    deals_to_basket: "Sessions reaching basket / Sessions reaching deals"
+    revenue_per_session: "Revenue / Sessions"
+    aov: "Revenue / Orders"
+    items_per_order: "Items in orders / Orders (Monetate counts the delivery fee as an item; GA4 may not)"
+  fulfilment: "Delivery or Collection. Delivery has a minimum order threshold; ~90% of UK orders use a deal or voucher."
+  devices: "Roughly 3 mobile sessions for every desktop session."
+
+  releases:                    # change dates confirmed by the account team (add as they're confirmed)
+    - {test: EXP-242v3, test_dates: "2026-04-22 to 2026-05-04", live: "2026-05-05", note: "returning sessions only (~55% of UK web sessions in the test)"}
+    - {test: EXP-255, test_dates: "2026-01-19 to 2026-02-15", live: "2026-07-08 09:00", note: "basket stuffed crust upsell; outcome = orders with stuffed crust / orders"}
+recipes:
+  - id: dominos_deal_builder_attach
+    name: "Deal Builder upsells: item attach rate"
+    use_when: "Upsells or reordering inside the Deal Builder (dips, sides, size upgrades, premium sides)."
+    example_tests: [EXP-201.3, EXP-201v4, EXP-201v5, EXP-246, EXP-278]
+    verified: false
+    outcome:
+      column: deal_orders_with_item
+      definition: "Orders containing a deal (a deal line item, built in the Deal Builder) AND the upsold item (e.g. a Big Dip, a premium side, a size upgrade)."
+      how_to_export: "recipes/sql/dominos_weekly.sql (deal = order with an item_category of deal / meal deal in CX_Analysis.GA4_items)."
+    denominator:
+      column: deal_orders
+      definition: "Orders containing a deal."
+      how_to_export: "recipes/sql/dominos_weekly.sql."
+    controls:
+      - column: ie_deal_orders_with_item / ie_deal_orders
+        definition: "Same attach rate on Ireland web (build as a ratio in step 2)."
+        why: "Same site, menu and seasonality; Ireland wasn't in the Monetate test."
+        cautions: "Ireland may run different products, prices and campaigns."
+        how_to_export: "Same query on the Ireland property."
+      - column: nondeal_orders_with_item / nondeal_orders
+        definition: "Attach rate of the same item on UK web orders WITHOUT a deal."
+        why: "Same customers and item demand; the Deal Builder upsell is never shown on these orders."
+        cautions: >
+          If the change makes people more (or less) likely to use a deal at all, the mix of non-deal orders
+          shifts. Answer the 'switch' checklist question carefully.
+        how_to_export: "BigQuery GA4 export: purchase events without a deal item."
+      - column: app_orders_with_item / app_orders
+        definition: "App attach rate for the same item."
+        why: "Same item demand and national campaigns; app users never see web tests."
+        cautions: "The app runs its own upsells (Big Dip, size upgrade). Don't use it if the app changed its upsell around the same time."
+        how_to_export: "App data in BigQuery."
+    placebo:
+      - column: menu_only_orders / menu_only_sessions
+        definition: "UK web conversion of sessions that viewed the menu but never the deals page."
+        why: >
+          These sessions never see the deals page, so a change that's only visible there can't affect them.
+          They go through the same basket, checkout and payment steps, so this moves if something site-wide
+          happens in the same weeks: an outage, a checkout or payment problem, a tracking break, a campaign
+          changing traffic quality, or menu price changes. If it moves, investigate before trusting the result.
+        cautions: >
+          It can NOT see a new national deal or deal price change, because these sessions don't visit the deals
+          page. A flat placebo rules out site-wide events, not deal changes: check the campaign calendar and use
+          the app control for those. Not valid if the change is visible on the menu, header or homepage, or
+          changes where users land (e.g. EXP-242 direct to deals). The Deal Builder opens when a user clicks a
+          deal; if deals can also be clicked outside the deals page (e.g. a homepage banner), some 'menu-only'
+          sessions could still reach it.
+    placebo_note: >
+      Use the menu-only placebo for site-wide events only. It can't see deal or price changes in the same
+      weeks, so also check the campaign calendar and keep the app control.
+    typical_detectable_effect: "Attach rates are precise: likely around ±5-10% over 13 weeks. To be confirmed on real data."
+    notes: "Prefer this over AOV or RPS for upsell tests: the attach rate is close to the change, so it's far more sensitive."
+
+  - id: dominos_deals_progression
+    name: "Deals page: Deals > Basket progression"
+    use_when: "Changes to the Deals page, deal cards, banners, ordering, or landing users on Deals."
+    example_tests: [EXP-227, EXP-242v2, EXP-242v3, EXP-261, EXP-269, EXP-277, EXP-296]
+    verified: false
+    outcome:
+      column: deals_sessions_to_basket
+      definition: "Sessions that reached the Deals page and then the Basket."
+      how_to_export: "GA4 funnel exploration or BigQuery: sessions with a deals page_view followed by a view_cart, by week."
+    denominator:
+      column: deals_sessions
+      definition: "Sessions that reached the Deals page."
+      how_to_export: "GA4 / BigQuery: sessions with a deals page_view."
+    controls:
+      - column: ie_deals_sessions_to_basket / ie_deals_sessions
+        definition: "Ireland web Deals > Basket progression."
+        why: "Same page design and journey; Ireland wasn't in the Monetate test."
+        cautions: "Different national deals and campaigns."
+      - column: app_deals_sessions_to_basket / app_deals_sessions
+        definition: "App Deals > Basket progression."
+        why: "Same deals and national campaigns."
+        cautions: "Two for Tuesday and app-only deals; web deal changes can pull users from the app (EXP-275v2)."
+      - column: menu_sessions_to_basket / menu_sessions
+        definition: "UK web Menu > Basket progression."
+        why: "Same customers and campaigns, different page."
+        cautions: >
+          Weakest option: changes to Deals often move people between Deals and Menu (EXP-242 landed users on
+          Deals). Don't use it for tests that change where users land. See the menu categories known issue.
+    placebo:
+      - column: menu_only_orders / menu_only_sessions
+        definition: "UK web conversion of sessions that viewed the menu but never the deals page."
+        why: >
+          These sessions never see the deals page, so a change that's only visible there can't affect them.
+          They go through the same basket, checkout and payment steps, so this moves if something site-wide
+          happens in the same weeks: an outage, a checkout or payment problem, a tracking break, a campaign
+          changing traffic quality, or menu price changes. If it moves, investigate before trusting the result.
+        cautions: >
+          It can NOT see a new national deal or deal price change, because these sessions don't visit the deals
+          page. A flat placebo rules out site-wide events, not deal changes: check the campaign calendar and use
+          the app control for those. Not valid if the change is visible on the menu, header or homepage, or
+          changes where users land (e.g. EXP-242 direct to deals). The Deal Builder opens when a user clicks a
+          deal; if deals can also be clicked outside the deals page (e.g. a homepage banner), some 'menu-only'
+          sessions could still reach it.
+    placebo_note: >
+      Use the menu-only placebo for site-wide events only. It can't see deal or price changes in the same
+      weeks, so also check the campaign calendar and keep the app control.
+    typical_detectable_effect: "To be confirmed on real data."
+
+  - id: dominos_menu_progression
+    name: "Menu and product pages: Menu > Basket progression"
+    use_when: "Changes to the menu, categories, filters, product pages, pizza customisation or vouchers on the menu."
+    example_tests: [EXP-231, EXP-237v2, EXP-251, EXP-252, EXP-256, EXP-271, EXP-282, EXP-CND]
+    verified: false
+    outcome:
+      column: menu_sessions_to_basket
+      definition: "Sessions that reached the Menu and then the Basket."
+      how_to_export: "GA4 funnel exploration or BigQuery: sessions with a menu page_view followed by a view_cart, by week."
+    denominator:
+      column: menu_sessions
+      definition: "Sessions that reached the Menu."
+      how_to_export: "GA4 / BigQuery: sessions with a menu page_view (any menu category page from 14 Jul 2026)."
+    controls:
+      - column: ie_menu_sessions_to_basket / ie_menu_sessions
+        definition: "Ireland web Menu > Basket progression."
+        why: "Same journey; Ireland wasn't in the Monetate test."
+        cautions: "Ireland still has the single-page menu (UK moved to category pages on 14 Jul 2026); fine as a control, but see the known issue."
+      - column: app_menu_sessions_to_basket / app_menu_sessions
+        definition: "App Menu > Basket progression."
+        why: "Same products and campaigns."
+        cautions: "App has its own menu upsells (extra cheese, Big Dip); avoid if the app changed at the same time."
+    placebo: []                # none recommended: see placebo_note
+    placebo_note: >
+      No placebo recommended. The obvious candidates (e.g. store selector > menu/deals progression) can't be
+      affected by the change, but they also can't pick up the events most likely to distort a Domino's
+      result, such as a national deal, price or campaign change landing in the same week, because those
+      act on what people do on the menu/deals pages, not on whether they get there. Guard against those
+      instead with the app control (same national deals and campaigns), the campaign calendar, and the
+      robustness panel.
+    typical_detectable_effect: "To be confirmed on real data."
+    notes: "Read the menu categories known issue first: history crossing 14 Jul 2026 isn't like-for-like."
+
+  - id: dominos_basket
+    name: "Basket and RFM: basket value, items and progression"
+    use_when: "Changes on the Basket page or the RFM interstitial: upsells, delivery threshold and fees, CTAs, voucher field."
+    example_tests: [EXP-220, EXP-233, EXP-255, EXP-283, EXP-289]
+    verified: false
+    outcome:
+      column: basket_sessions_to_checkout
+      definition: "Sessions that reached the Basket and then Checkout. For upsells, use attach rate (orders with item / orders) or items per order instead."
+      how_to_export: "GA4 / BigQuery: sessions with view_cart followed by begin_checkout, by week."
+    denominator:
+      column: basket_sessions
+      definition: "Sessions that reached the Basket."
+      how_to_export: "GA4 / BigQuery: sessions with a view_cart event."
+    controls:
+      - column: ie_basket_sessions_to_checkout / ie_basket_sessions
+        definition: "Ireland web Basket > Checkout progression."
+        why: "Same basket design; Ireland wasn't in the Monetate test."
+        cautions: "Different delivery thresholds and fees."
+      - column: app_basket_sessions_to_checkout / app_basket_sessions
+        definition: "App Basket > Checkout progression."
+        why: "Same products and campaigns."
+        cautions: "App basket upsells differ (e.g. premium crust upsell)."
+      - column: collection_orders / sessions
+        definition: "Collection orders per UK web session."
+        why: "For delivery-only changes (threshold, delivery fee): collection users don't see them."
+        cautions: >
+          Only for delivery-only changes, and check the change didn't move people between delivery and
+          collection (EXP-249v2 saw a small shift).
+    placebo: []                # none recommended: see placebo_note
+    placebo_note: >
+      No placebo recommended. The obvious candidates (e.g. store selector > menu/deals progression) can't be
+      affected by the change, but they also can't pick up the events most likely to distort a Domino's
+      result, such as a national deal, price or campaign change landing in the same week, because those
+      act on what people do on the menu/deals pages, not on whether they get there. Guard against those
+      instead with the app control (same national deals and campaigns), the campaign calendar, and the
+      robustness panel.
+    typical_detectable_effect: "To be confirmed on real data."
+
+  - id: dominos_checkout
+    name: "Checkout: checkout completion"
+    use_when: "Changes on the Checkout page (payment methods, CTAs, delivery time messaging at checkout)."
+    example_tests: [EXP-217, EXP-217v2]
+    verified: false
+    outcome:
+      column: checkout_sessions_to_order
+      definition: "Sessions reaching checkout that placed an order."
+      how_to_export: "GA4 / BigQuery: sessions with begin_checkout and purchase, by week."
+    denominator:
+      column: checkout_sessions
+      definition: "Sessions reaching checkout."
+      how_to_export: "GA4 / BigQuery: sessions with begin_checkout."
+    controls:
+      - column: ie_checkout_sessions_to_order / ie_checkout_sessions
+        definition: "Ireland web checkout completion."
+        why: "Same checkout; Ireland wasn't in the Monetate test."
+        cautions: "Payment providers may differ."
+      - column: app_checkout_sessions_to_order / app_checkout_sessions
+        definition: "App checkout completion."
+        why: "Same payment providers and campaigns."
+        cautions: "App outages and app-only payment methods."
+    placebo: []                # none recommended: see placebo_note
+    placebo_note: >
+      No placebo recommended. The obvious candidates (e.g. store selector > menu/deals progression) can't be
+      affected by the change, but they also can't pick up the events most likely to distort a Domino's
+      result, such as a national deal, price or campaign change landing in the same week, because those
+      act on what people do on the menu/deals pages, not on whether they get there. Guard against those
+      instead with the app control (same national deals and campaigns), the campaign calendar, and the
+      robustness panel.
+    typical_detectable_effect: "To be confirmed on real data."
+
+  - id: dominos_sitewide_conversion
+    name: "Site-wide and landing changes: conversion rate"
+    use_when: "Header, banners, landing modals, delivery-time messaging, store information, exit intent: anything shown across the journey."
+    example_tests: [EXP-222, EXP-228, EXP-232, EXP-262, EXP-263]
+    verified: false
+    outcome:
+      column: orders
+      definition: "Orders (UK web)."
+      how_to_export: "GA4: purchases (transactions) by week."
+    denominator:
+      column: sessions
+      definition: "Sessions (UK web)."
+      how_to_export: "GA4: sessions by week."
+    controls:
+      - column: ie_orders / ie_sessions
+        definition: "Ireland web conversion rate."
+        why: "Same site and journey; Ireland wasn't in the Monetate test."
+        cautions: "Different campaigns, deals and prices."
+      - column: app_orders / app_sessions
+        definition: "App conversion rate."
+        why: "Same products and national campaigns."
+        cautions: "Two for Tuesday, app-only deals, app outages, and site-wide web changes can move users between app and web."
+    placebo: []                # none recommended: see placebo_note
+    placebo_note: >
+      No placebo recommended. The obvious candidates (e.g. store selector > menu/deals progression) can't be
+      affected by the change, but they also can't pick up the events most likely to distort a Domino's
+      result, such as a national deal, price or campaign change landing in the same week, because those
+      act on what people do on the menu/deals pages, not on whether they get there. Guard against those
+      instead with the app control (same national deals and campaigns), the campaign calendar, and the
+      robustness panel.
+    typical_detectable_effect: "Conversion is noisy: expect only large effects (10%+) to be detectable."
+    notes: >
+      Site-wide changes have the weakest controls. Expect 'Inconclusive' unless the effect was large. For
+      changes that matter commercially, a long-running Monetate holdout (e.g. 5% kept on control) is the
+      reliable way to measure the long-term effect.

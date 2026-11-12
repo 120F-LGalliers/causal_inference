@@ -1,0 +1,164 @@
+# Tesco Mobile: data recipes for the post-release impact checker
+#
+# Drafted Nov 2026 from the first TM post-release checks (EAOA-1541, EAOA-2008, EAOA-1677, EAOA-1074).
+# Anything marked verified: false needs checking by the account team before relying on it.
+# Edit via pull request. See recipes/README.md for the format.
+
+client: Tesco Mobile
+owner: ""                      # account team member who maintains this file
+last_reviewed: ""              # YYYY-MM-DD
+
+data_source:
+  tool: Adobe Analytics
+  company: tescom4
+  report_suite: vrs_tescom4_online
+  report_suite_name: Online (virtual report suite)
+  notes: >
+    Use the Online virtual report suite, not PROD (tmltdprod). PROD includes store-assisted orders
+    whose tracking drops out in several periods (see known_issues). Export weekly with the
+    'Week' dimension; Adobe labels weeks by their start date.
+data_starts: 2024-09-02        # no Adobe Analytics data before this date
+
+release_process: >
+  Tests are tracked as EAOA tickets in the SQUAD: Ecomm, App Optimisation & Analytics Jira project; the
+  test's primary metric is in the description table. Winners are built through MAG (Magento) tickets;
+  the release date is the fix version's release date. Winners are sometimes run at 100% in Adobe Target
+  before the release (e.g. EAOA-1830 ran at 100% from 16 Dec 2024 until release on 10 Mar 2025). Check the
+  Target activity history: if it ran at 100%, use that date as the change date.
+
+known_issues:
+  - start: 2025-08-25
+    end: 2025-10-05
+    affects: "Store-assisted orders (blank sales channel in evar58) in PROD"
+    applies_to: [tm_ma_dashboard_new_lines, tm_checkout_business_orders, tm_clubcard_attachment]
+    advice: "Use the Online VRS. If you must use PROD, leave these weeks out."
+  - start: 2026-03-02
+    end: 2026-05-10
+    affects: "Store-assisted orders (blank sales channel in evar58) in PROD"
+    applies_to: [tm_ma_dashboard_new_lines, tm_checkout_business_orders, tm_clubcard_attachment]
+    advice: "Use the Online VRS. If you must use PROD, leave these weeks out."
+  - start: 2026-08-31
+    end: 2026-10-04
+    affects: "Store-assisted orders (blank sales channel in evar58) in PROD"
+    applies_to: [tm_ma_dashboard_new_lines, tm_checkout_business_orders, tm_clubcard_attachment]
+    advice: "Use the Online VRS. If you must use PROD, leave these weeks out."
+  - start: null
+    end: null
+    affects: "Commercial peaks every year (Black Friday in late November, iPhone launches in September)"
+    applies_to: [tm_ma_dashboard_new_lines, tm_checkout_business_orders, tm_clubcard_attachment]
+    advice: >
+      Order and conversion series spike. If your controls don't follow the spike, consider leaving the
+      peak weeks out of the 'before' period.
+
+reference:
+  evar58: >
+    Order Detail. Pipe-delimited: order_type | customer_type | credit_assisted | customer_status | sales_channel | location.
+    order_type values include 'new order' (new customer), 'upgrade', 'new subscription' (extra line on an
+    existing account), 'migration'. customer_type is 'consumer' or 'business'.
+  evar72: "Order has Clubcard number. '1' = yes, '0' = no. Only set on new orders."
+  evar86: User Account Details (user_account_type | user_is_multiple_subscription | account_upgrade_eligible).
+  pages:
+    dashboard: "paym | account | dashboard"
+    login: "paym | authentication | login"
+    forgot_password: "paym | authentication | forgot password (plus ForgotPassword.do URLs on paymonthly.tescomobile.com)"
+    forgot_username: "ForgotUsername.do URLs on paymonthly.tescomobile.com"
+
+recipes:
+  - id: tm_ma_dashboard_new_lines
+    name: "My Account dashboard: additional-line (multiline) orders"
+    use_when: "Changes on the My Account dashboard aimed at getting customers to add a line."
+    example_tests: [EAOA-2008]
+    verified: false
+    outcome:
+      column: ns_orders_dashboard_visits
+      definition: "Orders where evar58 starts with 'new subscription', in visits that viewed the dashboard."
+      how_to_export: >
+        Metric: Orders. Segments: (1) hit container, evar58 starts with 'new subscription' AND Orders exists;
+        (2) visit container, Page equals 'paym | account | dashboard'.
+    denominator:
+      column: dashboard_visits
+      definition: "Visits that viewed the dashboard."
+      how_to_export: "Metric: Visits. Segment: visit container, Page equals 'paym | account | dashboard'."
+    controls:
+      - column: ns_orders_non_dashboard
+        definition: "New-subscription orders in visits that did NOT view the dashboard."
+        why: "Same product and seasonality, from visits the dashboard change couldn't reach."
+        cautions: >
+          Someone who saw the dashboard may order in a later visit without it (spillover), which would
+          slightly hide a positive effect.
+        how_to_export: "Metric: Orders. Segments: hit container as above; visit container EXCLUDING dashboard page."
+      - column: new_customer_orders
+        definition: "Orders where evar58 starts with 'new order' (new customers, no account)."
+        why: "Overall demand and promotions; new customers can't see My Account."
+    placebo:
+      - column: login_visits
+        definition: "Visits that viewed the login page."
+        why: "Customers log in before they see the dashboard, so a dashboard change can't affect logins."
+    typical_detectable_effect: "About ±20% over 26 weeks (EAOA-2008 check, Nov 2026)"
+
+  - id: tm_login_forgot_username
+    name: "Login journey: forgotten-username requests"
+    use_when: "Changes to the login form or forgotten-credential journeys."
+    example_tests: [EAOA-1541]
+    verified: false
+    outcome:
+      column: forgot_username_visits
+      definition: "Visits that reached a ForgotUsername.do page."
+      how_to_export: "Metric: Visits. Segment: visit container, Page contains 'ForgotUsername.do'."
+    denominator:
+      column: login_visits
+      definition: "Visits that viewed the login page."
+      how_to_export: "Metric: Visits. Segment: visit container, Page equals 'paym | authentication | login'."
+    controls:
+      - column: forgot_password_visits
+        definition: "Visits reaching the forgot-password page (tick 'express controls per the same denominator')."
+        why: "Sibling action on the same page and traffic."
+        cautions: >
+          In the EAOA-1541 check it didn't improve the forecast (the forgot-username rate was stable anyway).
+          A change to the password journey would affect it, so don't use it for password changes.
+    placebo:
+      - column: new_customer_orders
+        definition: "Online new-customer orders (evar58 starts with 'new order')."
+        why: "New customers don't log in, so a login change can't affect them."
+    typical_detectable_effect: "About ±16-18% over 8 weeks (EAOA-1541 check, Nov 2026)"
+
+  - id: tm_checkout_business_orders
+    name: "Checkout: business orders"
+    use_when: "Changes affecting how business customers are identified or convert at checkout."
+    example_tests: [EAOA-1677]
+    verified: false
+    outcome:
+      column: business_orders
+      definition: "Orders where evar58 contains '|business|'."
+      how_to_export: "Metric: Orders. Segment: hit container, evar58 contains '|business|' AND Orders exists."
+    denominator: null
+    controls:
+      - column: consumer_orders
+        definition: "All orders minus business orders."
+        why: "Same site, promotions and seasons."
+        cautions: "The EAOA-1677 test also lifted consumer orders slightly (+11%), which would hide part of a business effect."
+    placebo: []
+    typical_detectable_effect: "Wide: only ~200 business orders a week, so expect ±25% or more"
+    notes: >
+      MAG-5614 (resolved Dec 2024, no fix version) and MAG-848 (released 1 May 2025) both relate to EAOA-1677;
+      check which actually changed the live journey, and whether Target ran it at 100% in between.
+
+  - id: tm_clubcard_attachment
+    name: "Clubcard attachment on new orders"
+    use_when: "Changes promoting Clubcard on product pages or in checkout."
+    example_tests: [EAOA-1074]
+    verified: false
+    outcome:
+      column: clubcard_orders
+      definition: "Orders where evar72 = '1'."
+      how_to_export: "Metric: Orders. Segment: hit container, evar72 equals '1' AND Orders exists."
+    denominator:
+      column: orders_with_clubcard_flag
+      definition: "Orders where evar72 is set ('0' or '1'), i.e. new orders."
+      how_to_export: "Metric: Orders. Segment: hit container, evar72 exists AND Orders exists."
+    controls: []
+    placebo: []
+    typical_detectable_effect: "Unreliable so far: attachment swings between 62% and 74% with offers, independent of site changes"
+    notes: >
+      Attachment is driven heavily by commercial offers. Get the offers calendar and leave major offer periods
+      out, or don't use this recipe for small changes.
