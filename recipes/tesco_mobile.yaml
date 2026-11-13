@@ -121,6 +121,7 @@ recipes:
         definition: "Online new-customer orders (evar58 starts with 'new order')."
         why: "New customers don't log in, so a login change can't affect them."
     typical_detectable_effect: "About ±16-18% over 8 weeks (EAOA-1541 check, Nov 2026)"
+    controls_as_rate: true       # controls are divided by the same denominator (login visits)
 
   - id: tm_checkout_business_orders
     name: "Checkout: business orders"

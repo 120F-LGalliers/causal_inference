@@ -49,4 +49,5 @@ recipes:
         definition: ""
         why: ""
     typical_detectable_effect: ""
+    controls_as_rate: false      # true if controls are counts from the same traffic as the outcome
     notes: ""

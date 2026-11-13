@@ -73,11 +73,11 @@ Same company, same seasons and promotions, different site. Weak on its own, usef
 
 ## Ratio series
 
-Often the best control is a *rate* in an unexposed group, e.g. orders ÷ visits for visitors who didn't see the change. Use **"Create ratio series"** in step 2 to build one from two columns.
+Often the best control is a *rate* in an unexposed group, e.g. orders ÷ visits for visitors who didn't see the change. Recipes create these for you. Otherwise use **"Advanced: date labelling and ratio series"** in step 4 (Your data) to build one from two columns.
 
 ## What the tool checks for you
 
-When you click **Check candidate series**, each candidate gets these scores:
+When you click **Score the candidates** (step 5), each candidate gets these scores:
 
 | Column | What it means | Good looks like |
 |---|---|---|
@@ -121,7 +121,7 @@ The tool finds the combination of controls (non-negative weights, plus a constan
 ## If you can't find a good control
 
 - Run with no controls. The comparison line is then just the outcome's average level before the change. Treat the result with extra caution, especially if the outcome is seasonal.
-- Leave out unusual weeks (peak trading, outages) from the "before" period using the exclusion table in step 1.
+- Leave out unusual weeks (peak trading, outages) from the "before" period using **"Advanced: leave out other weeks"** in step 3 (Go-live date).
 - For future changes, plan a **holdout**.
 
 Next: [Reading the results](04_reading_results.md)

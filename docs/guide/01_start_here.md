@@ -43,12 +43,18 @@ The tool then asks one more question: **is the gap after the change bigger than 
 | For client-facing results: a colleague to review | Anyone else on the team. See [Robustness and review](08_robustness_and_review.md) |
 | A CSV of weekly or daily data | Your analytics tool. **Start from the client's data recipe if there is one**: it says exactly what to export. See also [Choosing the outcome](02_choosing_the_outcome.md) and [Choosing control series](03_choosing_controls.md) |
 
-## The four steps in the app
+## The six steps in the app
 
-1. **Client, recipe and test details.** Pick the client's data recipe (if there is one), then enter the dates, the test result, the control group's figure, and how much of your metric the change could reach.
-2. **Data.** Upload the CSV and tell the tool which column is which. It checks your export against the test and flags known data issues.
-3. **Control series and placebo.** The tool checks each candidate control and suggests which to use. You answer a short checklist about each one, and pick a placebo metric.
-4. **Results.** A verdict in plain English, data checks, charts, and a downloadable report.
+The **Run a check** tab walks you through one step at a time. Your answers are kept as you move back and forth.
+
+1. **Start.** Pick the client and where on the site the change was. That loads a *recipe*: the agreed metrics, and the columns to export (with a ready-made query where there is one). You can also try an example or re-open saved settings.
+2. **The test.** Test name, the result, the test dates, and (recommended) the control group's figure from the readout.
+3. **Go-live date.** When users first saw the change: the date it went to 100% in the testing tool, or the release date.
+4. **Your data.** Upload the CSV and confirm which column is the metric to check. The tool checks your export against the test and flags known data issues.
+5. **Comparison.** The tool scores the control series and suggests which to use. You answer a short checklist about each one, and optionally pick a placebo metric.
+6. **Check & run.** Review a summary (with Edit links), say who it's for, then lock the plan and run.
+
+Then you get the **results**: a verdict in plain English, the key chart, downloads, and more detail if you want it.
 
 Set aside 30–60 minutes the first time, most of it getting the right data. After that, a check takes 15–20 minutes.
 

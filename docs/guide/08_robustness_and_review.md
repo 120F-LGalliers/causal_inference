@@ -42,7 +42,7 @@ Before results appear, you choose:
 - **Purpose:** *Internal check* or *Client-facing*.
 - **Your name.**
 
-Then you click **Lock plan and run analysis**. The tool records every setting and a **fingerprint** of the exact weekly data (a SHA-256 hash), and gives the plan an **ID**. If you change any setting or the data, you get a new plan ID, and the analysis history shows every plan you ran.
+Then, in step 6 (Check & run), you click **Lock plan and run**. The tool records every setting and a **fingerprint** of the exact weekly data (a SHA-256 hash), and gives the plan an **ID**. If you change any setting or the data, you get a new plan ID, and the analysis history shows every plan you ran.
 
 **Good practice:** decide the outcome, controls, placebo and window first, based on the recipe and the checks, *then* lock and run. If you change something after seeing the result, write down why. The reviewer will see the history.
 

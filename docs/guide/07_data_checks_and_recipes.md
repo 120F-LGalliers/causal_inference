@@ -8,7 +8,7 @@ A recipe is the agreed way to measure one kind of change for one client: which m
 
 **How to use one:**
 
-1. In step 1, choose the client and the recipe that matches your change.
+1. In step 1 (Start), choose the client and where on the site the change was. That loads the recipe.
 2. Read the **recipe card**. It tells you exactly what to export and how.
 3. Export the series using the suggested column names. The app then pre-fills steps 2 and 3.
 4. Any known data issues in your date range are listed after you upload.
@@ -64,7 +64,7 @@ These run with every analysis and appear in the **Data checks** panel under the 
 
 **Known issues for this client.** From the recipe: tracking breaks or peaks that overlap your date range.
 
-**Data-quality flags** (in step 2). Week-on-week jumps of more than 50%, zeros and missing weeks.
+**Data-quality flags** (in step 4, Your data). Week-on-week jumps of more than 50%, zeros and missing weeks.
 
 ## Putting it together: a quick checklist before you share a result
 
