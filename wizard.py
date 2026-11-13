@@ -347,15 +347,19 @@ def step_start():
         ex = st.selectbox("Example", list(EXAMPLES), key=key("ex"))
         st.caption("Examples fill in every step with real or realistic data, so you can click through a complete check.")
         if st.button("Load this example", type="primary", key=key("loadex")):
-            reset({**EXAMPLES[ex], "_mode": mode})
+            reset({**EXAMPLES[ex], "_mode": "A new check"})
+            ss["wz_loaded_msg"] = f"Example loaded: **{ex}**. Every step is filled in; click Next to walk through it."
+            go(1)
             st.rerun()
         return
     if mode == "Re-open saved settings":
         f = st.file_uploader("Settings file (JSON, downloaded from a previous run)", type=["json"], key=key("cfg"))
         if f is not None and st.button("Load these settings", type="primary", key=key("loadcfg")):
             try:
-                reset({**json.load(f), "_mode": mode})
-                st.success("Settings loaded. You'll need to upload the same data file in step 4.")
+                reset({**json.load(f), "_mode": "A new check"})
+                ss["wz_loaded_msg"] = ("Settings loaded. Check each step, and upload the same data file in step 4 "
+                                       "(Your data).")
+                go(1)
                 st.rerun()
             except Exception as e:  # noqa: BLE001
                 st.error(f"Couldn't read the settings file: {e}")
@@ -956,6 +960,8 @@ def render():
         st.markdown(f"<div style='font-size:1.35rem;font-weight:700;margin:.2rem 0 .4rem'>📈 Post-release impact "
                     f"checker <span style='font-weight:400;opacity:.65'>· {name}</span></div>", unsafe_allow_html=True)
     progress()
+    if ss.get("wz_loaded_msg"):
+        st.success(ss.pop("wz_loaded_msg"))
     with st.container(border=True):
         [step_start, step_test, step_live, step_data, step_compare, step_run, results_page][step]()
     if step < RESULTS:
